@@ -201,7 +201,6 @@ class Monopoly:
         # Init jail turn counter
         self.is_in_jail = False
         self.jail_visit_counter = 0
-        self.all_equal_turn_counter = 0
 
     @staticmethod
     def roll_dice() -> List[int]:
@@ -210,7 +209,6 @@ class Monopoly:
     def go_to_jail(self):
         self.is_in_jail = True
         self.jail_visit_counter = 0
-        self.all_equal_turn_counter = 0
         self.board_index = self.jail_index
 
     def take_turn(self):
@@ -230,13 +228,16 @@ class Monopoly:
                 self.jail_visit_counter += 1
                 return
         else:
-            if all_equal:
-                self.all_equal_turn_counter += 1
-                if self.all_equal_turn_counter >= Monopoly.ALL_EQUAL_JAIL_TURNS:
+            all_equal_turn_counter = 1
+            while all_equal:
+                all_equal_turn_counter += 1
+                rolls = self.roll_dice()
+                all_equal = any(roll != rolls[0] for roll in rolls)
+
+                if all_equal_turn_counter >= Monopoly.ALL_EQUAL_JAIL_TURNS:
                     self.go_to_jail()
-                return
-            else:
-                self.all_equal_turn_counter = 0
+                    return
+
 
         self.board_index = (self.board_index + sum(rolls)) % len(Monopoly.BOARD)
         next_space = self.BOARD[self.board_index]
