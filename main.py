@@ -1,6 +1,7 @@
 from enum import Enum
 import random
 from typing import List
+import tabulate
 
 SEED = 12345
 random.seed(SEED)
@@ -256,7 +257,9 @@ if __name__ == "__main__":
         monopoly.run(max_turns)
         total_turns += max_turns
 
-    Monopoly.BOARD.sort(key=lambda x: x.counter, reverse=True)
-
-    for space in Monopoly.BOARD:
-        print(f"{space.space.name}: expected probability {space.counter / total_turns}")
+    data = sorted([
+        [space.space.name, space.counter / total_turns]
+        for space in Monopoly.BOARD
+    ], key=lambda x: x[1], reverse=True)
+    headers = ["Space", "Frequency"]
+    print(tabulate.tabulate(data, headers=headers))
