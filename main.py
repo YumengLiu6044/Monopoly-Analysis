@@ -1,7 +1,6 @@
 from enum import Enum
 import random
 from typing import List
-import pprint
 
 SEED = 12345
 random.seed(SEED)
@@ -73,22 +72,6 @@ class MonopolySpace:
 
         if space_type == SpaceType.JAIL:
             self.is_in_jail_counter = 0
-
-    @property
-    def is_property(self):
-        return self.space_type in {SpaceType.PROPERTY, SpaceType.RAILROAD, SpaceType.UTILITY}
-
-    @property
-    def is_chance(self):
-        return self.space_type == SpaceType.CHANCE
-
-    @property
-    def is_community_chest(self):
-        return self.space_type == SpaceType.COMMUNITY_CHEST
-
-    @property
-    def is_go_to_jail(self):
-        return self.space_type == SpaceType.GO_TO_JAIL
 
     @property
     def is_jail(self):
@@ -168,12 +151,6 @@ class Monopoly:
     ALL_EQUAL_JAIL_TURNS = 3
 
     def __init__(self):
-        # Init board
-        for space in Monopoly.BOARD:
-            space.counter = 0
-            if space.is_jail:
-                space.is_in_jail_counter = 0
-
         self.board_index = 0
 
         # Init chance and community chest decks
@@ -204,7 +181,10 @@ class Monopoly:
 
     @staticmethod
     def roll_dice() -> List[int]:
-        return [random.randint(1, Monopoly.DICE_FACES) for _ in range(Monopoly.DICE_COUNT)]
+        return [
+            random.randint(1, Monopoly.DICE_FACES)
+            for _ in range(Monopoly.DICE_COUNT)
+        ]
 
     def go_to_jail(self):
         self.is_in_jail = True
@@ -241,24 +221,24 @@ class Monopoly:
 
         self.board_index = (self.board_index + sum(rolls)) % len(Monopoly.BOARD)
         next_space = self.BOARD[self.board_index]
+        match next_space.space_type:
+            case SpaceType.CHANCE:
+                chance_card_is_jail = self.chance_deck[self.chance_index]
+                if chance_card_is_jail:
+                    next_space.counter += 1
+                    self.go_to_jail()
+                self.chance_index = (self.chance_index + 1) % self.CHANCE_DECK_SIZE
 
-        if next_space.is_chance:
-            chance_card_is_jail = self.chance_deck[self.chance_index]
-            if chance_card_is_jail:
+            case SpaceType.COMMUNITY_CHEST:
+                community_chest_card_is_jail = self.community_chest_deck[self.community_chest_index]
+                if community_chest_card_is_jail:
+                    next_space.counter += 1
+                    self.go_to_jail()
+                self.community_chest_index = (self.community_chest_index + 1) % self.COMMUNITY_CHEST_DECK_SIZE
+
+            case SpaceType.GO_TO_JAIL:
                 next_space.counter += 1
                 self.go_to_jail()
-            self.chance_index = (self.chance_index + 1) % self.CHANCE_DECK_SIZE
-
-        if next_space.is_community_chest:
-            community_chest_card_is_jail = self.community_chest_deck[self.community_chest_index]
-            if community_chest_card_is_jail:
-                next_space.counter += 1
-                self.go_to_jail()
-            self.community_chest_index = (self.community_chest_index + 1) % self.COMMUNITY_CHEST_DECK_SIZE
-
-        if next_space.is_go_to_jail:
-            next_space.counter += 1
-            self.go_to_jail()
 
     def run(self, turns: int):
         for _ in range(turns):
@@ -266,6 +246,17 @@ class Monopoly:
 
 
 if __name__ == "__main__":
-    monopoly = Monopoly()
-    monopoly.run(100000)
-    pprint.pprint(sorted(monopoly.BOARD, key=lambda x: x.counter, reverse=True))
+    total_turns = 0
+
+    max_turns = 10000
+    samples = 1000
+
+    for _ in range(samples):
+        monopoly = Monopoly()
+        monopoly.run(max_turns)
+        total_turns += max_turns
+
+    Monopoly.BOARD.sort(key=lambda x: x.counter, reverse=True)
+
+    for space in Monopoly.BOARD:
+        print(f"{space.space.name}: expected probability {space.counter / total_turns}")
