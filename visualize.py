@@ -18,21 +18,20 @@ pairs = list(zip(spaces, frequency))
 pairs.sort(key=lambda x: x[1], reverse=True)
 
 # split back 
-spaces = [pair[0] for pair in pairs]
-frequency = [pair[1] for pair in pairs]
+spaces, frequency = zip(*pairs)
 
 # Map Monopoly spaces to Monopoly-style colors
 space_colors = {
-    "MEDITERRANEAN AVENUE": "purple",
-    "BALTIC AVENUE": "purple",
+    "MEDITERRANEAN AVENUE": "brown",
+    "BALTIC AVENUE": "brown",
 
     "ORIENTAL AVENUE": "lightblue",
     "VERMONT AVENUE": "lightblue",
     "CONNECTICUT AVENUE": "lightblue",
 
-    "ST CHARLES PLACE": "pink",
-    "STATES AVENUE": "pink",
-    "VIRGINIA AVENUE": "pink",
+    "ST CHARLES PLACE": "purple",
+    "STATES AVENUE": "purple",
+    "VIRGINIA AVENUE": "purple",
 
     "ST JAMES PLACE": "orange",
     "TENNESSEE AVENUE": "orange",
