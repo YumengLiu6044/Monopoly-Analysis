@@ -142,29 +142,77 @@ class Monopoly:
         MonopolySpace(BoardSpace.BOARDWALK, SpaceType.PROPERTY),
     ]
 
-    CHANCE_DECK_SIZE = 16
-    CHANCE_JAIL_CARD_COUNT = 1
+    CHANCE_CARDS = [
+        lambda pos: BoardSpace.BOARDWALK.value,  # 1. Boardwalk
+        lambda pos: BoardSpace.GO.value,  # 2. GO
+        lambda pos: BoardSpace.ILLINOIS_AVENUE.value,  # 3. Illinois Ave
+        lambda pos: BoardSpace.ST_CHARLES_PLACE.value,  # 4. St. Charles Place
+        lambda pos: Monopoly.next_railroad(pos),  # 5. Nearest Railroad
+        lambda pos: Monopoly.next_railroad(pos),  # 6. Nearest Railroad
+        lambda pos: Monopoly.next_utility(pos),  # 7. Nearest Utility
+        lambda pos: pos,  # 8. +$50 (no move)
+        lambda pos: pos,  # 9. Get Out of Jail Free
+        lambda pos: (pos - 3 + len(Monopoly.BOARD)) % len(Monopoly.BOARD),  # 10. Go back 3
+        lambda pos: BoardSpace.JAIL.value,  # 11. Go to Jail
+        lambda pos: pos,  # 12. Repairs
+        lambda pos: pos,  # 13. Pay $15
+        lambda pos: BoardSpace.READING_RAILROAD.value,  # 14. Reading RR
+        lambda pos: pos,  # 15. Pay players
+        lambda pos: pos,  # 16. +$150
+    ]
 
-    COMMUNITY_CHEST_DECK_SIZE = 16
-    COMMUNITY_CHEST_JAIL_CARD_COUNT = 1
+    COMMUNITY_CHEST_CARDS = [
+        lambda pos: BoardSpace.GO.value,  # 1. GO
+        lambda pos: pos,  # 2. +$200
+        lambda pos: pos,  # 3. Pay $50
+        lambda pos: pos,  # 4. +$50
+        lambda pos: pos,  # 5. Get Out of Jail Free
+        lambda pos: BoardSpace.JAIL.value,  # 6. Go to Jail
+        lambda pos: pos,  # 7. +$100
+        lambda pos: pos,  # 8. +$20
+        lambda pos: pos,  # 9. Birthday
+        lambda pos: pos,  # 10. +$100
+        lambda pos: pos,  # 11. Pay $100
+        lambda pos: pos,  # 12. Pay $50
+        lambda pos: pos,  # 13. +$25
+        lambda pos: pos,  # 14. Repairs
+        lambda pos: pos,  # 15. +$10
+        lambda pos: pos,  # 16. +$100
+    ]
 
     JAIL_TURN_LIMIT = 3
     ALL_EQUAL_JAIL_TURNS = 3
+
+    @staticmethod
+    def next_railroad(pos: int) -> int:
+        railroads = [
+            BoardSpace.READING_RAILROAD.value,
+            BoardSpace.PENNSYLVANIA_RAILROAD.value,
+            BoardSpace.B_AND_O_RAILROAD.value,
+            BoardSpace.SHORT_LINE_RAILROAD.value,
+        ]
+        for r in railroads:
+            if r > pos:
+                return r
+        return railroads[0]
+
+    @staticmethod
+    def next_utility(pos: int) -> int:
+        utilities = [
+            BoardSpace.ELECTRIC_COMPANY.value,
+            BoardSpace.WATER_WORKS.value,
+        ]
+        for u in utilities:
+            if u > pos:
+                return u
+        return utilities[0]
 
     def __init__(self):
         self.board_index = 0
 
         # Init chance and community chest decks
-        self.chance_deck = [
-            False if i >= self.CHANCE_JAIL_CARD_COUNT else True
-            for i in range(self.CHANCE_DECK_SIZE)
-        ]
-        self.community_chest_deck = [
-            False if i >= self.COMMUNITY_CHEST_JAIL_CARD_COUNT else True
-            for i in range(self.COMMUNITY_CHEST_DECK_SIZE)
-        ]
-        random.shuffle(self.chance_deck)
-        random.shuffle(self.community_chest_deck)
+        random.shuffle(self.CHANCE_CARDS)
+        random.shuffle(self.COMMUNITY_CHEST_CARDS)
 
         self.chance_index = 0
         self.community_chest_index = 0
@@ -224,18 +272,24 @@ class Monopoly:
         next_space = self.BOARD[self.board_index]
         match next_space.space_type:
             case SpaceType.CHANCE:
-                chance_card_is_jail = self.chance_deck[self.chance_index]
-                if chance_card_is_jail:
+                result = self.CHANCE_CARDS[self.chance_index](self.board_index)
+                if result != self.board_index:
                     next_space.counter += 1
-                    self.go_to_jail()
-                self.chance_index = (self.chance_index + 1) % self.CHANCE_DECK_SIZE
+                    if result == BoardSpace.JAIL.value:
+                        self.go_to_jail()
+                    else:
+                        self.board_index = result
+                self.chance_index = (self.chance_index + 1) % len(self.CHANCE_CARDS)
 
             case SpaceType.COMMUNITY_CHEST:
-                community_chest_card_is_jail = self.community_chest_deck[self.community_chest_index]
-                if community_chest_card_is_jail:
+                result = self.COMMUNITY_CHEST_CARDS[self.chance_index](self.board_index)
+                if result != self.board_index:
                     next_space.counter += 1
-                    self.go_to_jail()
-                self.community_chest_index = (self.community_chest_index + 1) % self.COMMUNITY_CHEST_DECK_SIZE
+                    if result == BoardSpace.JAIL.value:
+                        self.go_to_jail()
+                    else:
+                        self.board_index = result
+                self.community_chest_index = (self.community_chest_index + 1) % len(self.COMMUNITY_CHEST_CARDS)
 
             case SpaceType.GO_TO_JAIL:
                 next_space.counter += 1
