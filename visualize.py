@@ -2,7 +2,7 @@ from main import Monopoly
 import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
-    simulations = 100
+    simulations = 500
     turns = 10000
     total_turns = simulations * turns
 
