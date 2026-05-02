@@ -1,7 +1,6 @@
 from enum import Enum
 import random
 from typing import List
-import tabulate
 
 SEED = 12345
 random.seed(SEED)
@@ -96,7 +95,7 @@ class Monopoly:
     DICE_FACES = 6
     DICE_COUNT = 2
 
-    BOARD = [
+    BOARD_TEMPLATE = [
         MonopolySpace(BoardSpace.GO, SpaceType.GO),
         MonopolySpace(BoardSpace.MEDITERRANEAN_AVENUE, SpaceType.PROPERTY),
         MonopolySpace(BoardSpace.COMMUNITY_CHEST_1, SpaceType.COMMUNITY_CHEST),
@@ -152,7 +151,7 @@ class Monopoly:
         lambda pos: Monopoly.next_utility(pos),  # 7. Nearest Utility
         lambda pos: pos,  # 8. +$50 (no move)
         lambda pos: pos,  # 9. Get Out of Jail Free
-        lambda pos: (pos - 3 + len(Monopoly.BOARD)) % len(Monopoly.BOARD),  # 10. Go back 3
+        lambda pos: (pos - 3 + len(Monopoly.BOARD_TEMPLATE)) % len(Monopoly.BOARD_TEMPLATE),  # 10. Go back 3
         lambda pos: BoardSpace.JAIL.value,  # 11. Go to Jail
         lambda pos: pos,  # 12. Repairs
         lambda pos: pos,  # 13. Pay $15
@@ -210,6 +209,8 @@ class Monopoly:
     def __init__(self):
         self.board_index = 0
 
+        self.BOARD = Monopoly.BOARD_TEMPLATE.copy()
+
         # Init chance and community chest decks
         random.shuffle(self.CHANCE_CARDS)
         random.shuffle(self.COMMUNITY_CHEST_CARDS)
@@ -219,7 +220,7 @@ class Monopoly:
 
         # Init jail index
         jail_space = MonopolySpace(BoardSpace.JAIL, SpaceType.JAIL)
-        if Monopoly.BOARD.count(jail_space) != 1:
+        if self.BOARD.count(jail_space) != 1:
             raise ValueError("Jail space count is not 1")
 
         self.jail_index = self.BOARD.index(jail_space)
@@ -268,7 +269,7 @@ class Monopoly:
                     return
 
 
-        self.board_index = (self.board_index + sum(rolls)) % len(Monopoly.BOARD)
+        self.board_index = (self.board_index + sum(rolls)) % len(self.BOARD)
         next_space = self.BOARD[self.board_index]
         match next_space.space_type:
             case SpaceType.CHANCE:
@@ -298,22 +299,3 @@ class Monopoly:
     def run(self, turns: int):
         for _ in range(turns):
             self.take_turn()
-
-
-if __name__ == "__main__":
-    total_turns = 0
-
-    max_turns = 10000
-    samples = 1000
-
-    for _ in range(samples):
-        monopoly = Monopoly()
-        monopoly.run(max_turns)
-        total_turns += max_turns
-
-    data = sorted([
-        [space.space.name, space.counter / total_turns]
-        for space in Monopoly.BOARD
-    ], key=lambda x: x[1], reverse=True)
-    headers = ["Space", "Frequency"]
-    print(tabulate.tabulate(data, headers=headers))

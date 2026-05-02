@@ -1,18 +1,31 @@
 from main import Monopoly
 import matplotlib.pyplot as plt
+from multiprocessing import Pool, cpu_count
+from itertools import repeat
+
+def run_simulation(turns):
+    monopoly = Monopoly()
+    monopoly.run(turns)
+
+    return monopoly.BOARD
 
 if __name__ == "__main__":
-    simulations = 500
+    total_samples = 5000
     turns = 10000
-    total_turns = simulations * turns
+    total_turns = turns * total_samples
 
-    for simulation in range(simulations):
-        monopoly = Monopoly()
-        monopoly.run(turns)
+    workers = cpu_count()
+
+    with Pool(workers) as pool:
+        results = pool.map(run_simulation, repeat(turns, total_samples))
 
     # Calculate the frequency of landing on each space
-    spaces = [space.space.name.replace("_", " ") for space in Monopoly.BOARD]
-    frequency = [space.counter / total_turns for space in Monopoly.BOARD]
+    spaces = [space.space.name.replace("_", " ") for space in Monopoly().BOARD]
+    frequency = [0] * len(spaces)
+    for result in results:
+        for index, space in enumerate(result):
+            frequency[index] += space.counter
+    frequency = list(map(lambda x: x / total_turns, frequency))
 
     # Sort the spaces and frequencies in descending order
     pairs = list(zip(spaces, frequency))
