@@ -229,11 +229,13 @@ class Monopoly:
         self.jail_visit_counter = 0
 
     @staticmethod
-    def roll_dice() -> List[int]:
-        return [
+    def roll_dice() -> tuple[List[int], bool]:
+        rolls = [
             random.randint(1, Monopoly.DICE_FACES)
             for _ in range(Monopoly.DICE_COUNT)
         ]
+        all_equal = all(roll == rolls[0] for roll in rolls)
+        return rolls, all_equal
 
     def go_to_jail(self):
         self.is_in_jail = True
@@ -242,8 +244,7 @@ class Monopoly:
 
     def take_turn(self):
         current_space = self.BOARD[self.board_index]
-        rolls = self.roll_dice()
-        all_equal = all(roll == rolls[0] for roll in rolls)
+        rolls, all_equal = self.roll_dice()
         current_space.counter += 1
 
         # Determine the next space based on rolls or jail state
@@ -260,8 +261,7 @@ class Monopoly:
             all_equal_turn_counter = 1
             while all_equal:
                 all_equal_turn_counter += 1
-                rolls = self.roll_dice()
-                all_equal = any(roll != rolls[0] for roll in rolls)
+                rolls, all_equal = self.roll_dice()
 
                 if all_equal_turn_counter >= Monopoly.ALL_EQUAL_JAIL_TURNS:
                     self.go_to_jail()
@@ -282,7 +282,7 @@ class Monopoly:
                 self.chance_index = (self.chance_index + 1) % len(self.CHANCE_CARDS)
 
             case SpaceType.COMMUNITY_CHEST:
-                result = self.COMMUNITY_CHEST_CARDS[self.chance_index](self.board_index)
+                result = self.COMMUNITY_CHEST_CARDS[self.community_chest_index](self.board_index)
                 if result != self.board_index:
                     next_space.counter += 1
                     if result == BoardSpace.JAIL.value:
